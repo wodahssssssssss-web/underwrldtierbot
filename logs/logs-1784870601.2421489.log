@@ -1,0 +1,14 @@
+2026-07-24 17:23:21,246:WARNING:nextcord.client: PyNaCl is not installed, voice will NOT be supported
+2026-07-24 17:23:21,248:INFO:nextcord.client: logging in using static token
+2026-07-24 17:23:21,257:INFO:nextcord.http: Allowed 1 rate limits to be garbage collected.
+2026-07-24 17:23:21,957:INFO:nextcord.gateway: Shard ID None has sent the IDENTIFY payload.
+2026-07-24 17:23:22,507:INFO:nextcord.gateway: Shard ID None has connected to Gateway: ["gateway-prd-arm-us-east1-d-30wj",{"micros":311779,"calls":["id_created",{"micros":532,"calls":[]},"session_lookup_time",{"micros":432,"calls":[]},"session_lookup_finished",{"micros":11,"calls":[]},"sessions-prd-gcp-us-east1-d-67",{"micros":310322,"calls":["start_session",{"micros":295414,"calls":["prd-rpc-8f4c5df95-b7mg5",{"micros":153866,"calls":["get_user",{"micros":6090},"get_guilds",{"micros":7911},"send_scheduled_deletion_message",{"micros":11},"guild_join_requests",{"micros":6197},"authorized_ip_coro",{"micros":17},"pending_payments",{"micros":3199},"apex_experiments",{"micros":125369},"sessions_experiments",{"micros":12},"played_application_ids",{"micros":4},"linked_users",{"micros":4},"ad_personalization_toggles_disabled",{"micros":3},"regional_feature_config",{"micros":3}]}]},"starting_guild_connect",{"micros":29,"calls":[]},"lobbies_started",{"micros":1,"calls":[]},"presence_started",{"micros":8045,"calls":[]},"guilds_started",{"micros":97,"calls":[]},"guilds_connect",{"micros":4,"calls":[]},"presence_connect",{"micros":6707,"calls":[]},"connect_finished",{"micros":6719,"calls":[]},"build_ready",{"micros":14,"calls":[]},"clean_ready",{"micros":2,"calls":[]},"optimize_ready",{"micros":0,"calls":[]},"split_ready",{"micros":0,"calls":[]}]}]}] (Session ID: 114594e5e065679da306183a8b699cb2). Resume URL specified as wss://gateway-us-east1-d.discord.gg
+2026-07-24 17:23:24,863:INFO:src.utils.ensureResources: [ensureResources] Checking resources for guild 'Underwrld Teirs' …
+2026-07-24 17:23:25,287:INFO:src.utils.ensureResources: [ensureResources] Created role: 'Verified'
+2026-07-24 17:23:25,316:INFO:src.utils.ensureResources: [ensureResources] All resources verified for 'Underwrld Teirs'.
+2026-07-24 17:28:21,258:INFO:nextcord.http: Allowed 1 rate limits to be garbage collected.
+2026-07-24 17:28:59,477:INFO:nextcord.client: Received keyboard interrupt, closing.
+2026-07-24 17:28:59,478:INFO:nextcord.gateway: Websocket closed with 1000, cannot reconnect.
+2026-07-24 17:28:59,898:INFO:nextcord.client: Cleaning up after 2 tasks.
+2026-07-24 17:28:59,898:INFO:nextcord.client: All tasks finished cancelling.
+2026-07-24 17:28:59,899:INFO:nextcord.client: Closing the event loop.

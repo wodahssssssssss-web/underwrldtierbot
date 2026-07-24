@@ -1,0 +1,20 @@
+2026-07-24 18:11:49,950:WARNING:nextcord.client: PyNaCl is not installed, voice will NOT be supported
+2026-07-24 18:11:49,952:INFO:nextcord.client: logging in using static token
+2026-07-24 18:11:49,958:INFO:nextcord.http: Allowed 1 rate limits to be garbage collected.
+2026-07-24 18:11:50,890:INFO:nextcord.gateway: Shard ID None has sent the IDENTIFY payload.
+2026-07-24 18:11:51,450:INFO:nextcord.gateway: Shard ID None has connected to Gateway: ["gateway-prd-arm-us-east1-b-8b1m",{"micros":244399,"calls":["id_created",{"micros":1029,"calls":[]},"session_lookup_time",{"micros":359,"calls":[]},"session_lookup_finished",{"micros":10,"calls":[]},"sessions-prd-gcp-us-east1-b-84",{"micros":241633,"calls":["start_session",{"micros":205235,"calls":["prd-rpc-8f4c5df95-zn9js",{"micros":63458,"calls":["get_user",{"micros":12145},"get_guilds",{"micros":3451},"send_scheduled_deletion_message",{"micros":18},"guild_join_requests",{"micros":933},"authorized_ip_coro",{"micros":16},"pending_payments",{"micros":2357},"apex_experiments",{"micros":108990},"sessions_experiments",{"micros":18},"played_application_ids",{"micros":5},"linked_users",{"micros":7},"ad_personalization_toggles_disabled",{"micros":36},"regional_feature_config",{"micros":9}]}]},"starting_guild_connect",{"micros":36,"calls":[]},"lobbies_started",{"micros":1,"calls":[]},"presence_started",{"micros":358,"calls":[]},"guilds_started",{"micros":93,"calls":[]},"guilds_connect",{"micros":3,"calls":[]},"presence_connect",{"micros":35841,"calls":[]},"connect_finished",{"micros":35856,"calls":[]},"build_ready",{"micros":50,"calls":[]},"clean_ready",{"micros":3,"calls":[]},"optimize_ready",{"micros":0,"calls":[]},"split_ready",{"micros":1,"calls":[]}]}]}] (Session ID: 7d53d4eb7a9aa56c62e30cb27542f411). Resume URL specified as wss://gateway-us-east1-b.discord.gg
+2026-07-24 18:11:53,817:INFO:src.utils.ensureResources: [ensureResources] Checking resources for guild 'Underwrld Teirs' …
+2026-07-24 18:11:54,415:INFO:src.utils.ensureResources: [ensureResources] Created channel: '#sword-waitlist' in 'Waitlists'
+2026-07-24 18:11:54,894:INFO:src.utils.ensureResources: [ensureResources] Created channel: '#axe-waitlist' in 'Waitlists'
+2026-07-24 18:11:55,414:INFO:src.utils.ensureResources: [ensureResources] Created channel: '#uhc-waitlist' in 'Waitlists'
+2026-07-24 18:11:56,202:INFO:src.utils.ensureResources: [ensureResources] Created channel: '#smp-pvp-waitlist' in 'Waitlists'
+2026-07-24 18:11:57,417:INFO:src.utils.ensureResources: [ensureResources] Created channel: '#netherite-waitlist' in 'Waitlists'
+2026-07-24 18:11:57,835:INFO:src.utils.ensureResources: [ensureResources] Created channel: '#pot-waitlist' in 'Waitlists'
+2026-07-24 18:11:58,314:INFO:src.utils.ensureResources: [ensureResources] Created channel: '#mace-waitlist' in 'Waitlists'
+2026-07-24 18:11:58,847:INFO:src.utils.ensureResources: [ensureResources] Created channel: '#crystal-waitlist' in 'Waitlists'
+2026-07-24 18:11:58,847:INFO:src.utils.ensureResources: [ensureResources] All resources verified for 'Underwrld Teirs'.
+2026-07-24 18:12:00,009:INFO:nextcord.client: Received keyboard interrupt, closing.
+2026-07-24 18:12:00,009:INFO:nextcord.gateway: Websocket closed with 1000, cannot reconnect.
+2026-07-24 18:12:00,430:INFO:nextcord.client: Cleaning up after 5 tasks.
+2026-07-24 18:12:00,432:INFO:nextcord.client: All tasks finished cancelling.
+2026-07-24 18:12:00,432:INFO:nextcord.client: Closing the event loop.
