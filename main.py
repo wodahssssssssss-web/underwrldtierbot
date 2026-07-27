@@ -255,18 +255,14 @@ async def openqueue(
         await interaction.response.send_message(content=messages["error"], ephemeral=True)
 
 
-@bot.slash_command(name="closequeue", description="Closes a queue for a gamemode")
+@bot.slash_command(name="closequeue", description="Stops you testing a gamemode — queue stays open if other testers remain")
 async def closequeue(
     interaction: nextcord.Interaction,
     gamemode: str = nextcord.SlashOption(description="Gamemode", required=True, choices=listGamemodesText),
 ):
     try:
         gm_key = gamemodeDisplayToKey.get(gamemode, gamemode)
-        has_force_role = any(r.name == "." for r in interaction.user.roles)
-        if has_force_role:
-            response = queue.forceCloseQueue(gamemode=gm_key)
-        else:
-            response = queue.removeTester(userID=interaction.user.id, gamemode=gm_key)
+        response = queue.removeTester(userID=interaction.user.id, gamemode=gm_key)
         if response == "Testing is closed":
             await interaction.response.send_message(content=response, ephemeral=True); return
 
@@ -285,6 +281,35 @@ async def closequeue(
         await interaction.response.send_message(content=message_text, ephemeral=True)
     except Exception as e:
         logging.exception("Error in /closequeue:")
+        await interaction.response.send_message(content=messages["error"], ephemeral=True)
+
+
+@bot.slash_command(name="forceclosequeue", description="Closes a gamemode's queue for every tester currently testing it")
+async def forceclosequeue(
+    interaction: nextcord.Interaction,
+    gamemode: str = nextcord.SlashOption(description="Gamemode", required=True, choices=listGamemodesText),
+):
+    try:
+        if not has_staff_role(interaction.user):
+            await interaction.response.send_message(messages["no_permission"], ephemeral=True); return
+
+        gm_key = gamemodeDisplayToKey.get(gamemode, gamemode)
+        response = queue.forceCloseQueue(gamemode=gm_key)
+        if response == "Testing is closed":
+            await interaction.response.send_message(content=response, ephemeral=True); return
+
+        message_text, embed_data, channel_id, message_id = response
+        queueChannel = bot.get_channel(channel_id)
+        queueMessage = await queueChannel.fetch_message(message_id)
+
+        if isinstance(embed_data, dict):
+            await queueMessage.edit(embed=nextcord.Embed.from_dict(embed_data), view=None)
+        else:
+            await interaction.response.send_message("Something went wrong with the queue embed.", ephemeral=True); return
+
+        await interaction.response.send_message(content=message_text, ephemeral=True)
+    except Exception as e:
+        logging.exception("Error in /forceclosequeue:")
         await interaction.response.send_message(content=messages["error"], ephemeral=True)
 
 
