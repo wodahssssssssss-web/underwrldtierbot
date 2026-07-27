@@ -3,6 +3,7 @@
 # ── Options ────────────────────────────────────────────────────────────────────
 options:
     cooldown_days: 7          # days a player must wait before re-queuing
+    booster_cooldown_days: 3  # reduced cooldown for players with the booster role below
     queue_limit: 20           # max players in a queue at once (keep under ~40)
     tester_limit: 5           # max testers open per gamemode at once
     reload_queue: 30          # seconds between live queue embed refreshes (keep above 15)
@@ -25,6 +26,7 @@ roles:
     tester:   "Verified Tester"    # required to run /openqueue, /next, /result, etc.
     staff:    "staff"     # also allowed to run staff commands
     waitlist: "waitlist"  # generic role granted when a player joins any queue
+    booster:  "Server Booster"   # gets the reduced cooldown below
 
 # ── Global channels (names, not IDs) ──────────────────────────────────────────
 channels:
