@@ -15,7 +15,8 @@ try:
     maxTester:   int = config["options"]["tester_limit"]
     reloadQueue: int = config["options"]["reload_queue"]
     # Convert days → seconds for cooldown comparisons
-    cooldown:    int = config["options"]["cooldown_days"] * 24 * 60  # stored in minutes internally
+    cooldown:        int = config["options"]["cooldown_days"] * 24 * 60  # stored in minutes internally
+    boosterCooldown: int = config["options"].get("booster_cooldown_days", config["options"]["cooldown_days"]) * 24 * 60
 
     # ── Messages ───────────────────────────────────────────────────────────────
     messages: dict = config["messages"]
@@ -78,6 +79,13 @@ try:
         """e.g. get_waitlist_role_name('sword') → 'Waitlist Sword PvP'"""
         display = listGamemodes[gamemode_key]["display"]
         return f"Waitlist {display}"
+
+    def get_cooldown_for_member(member) -> int:
+        """Returns the queue cooldown (in minutes) that applies to this member —
+        the shorter booster cooldown if they have the booster role, else the default."""
+        if any(r.name == roleNames.get("booster") for r in member.roles):
+            return boosterCooldown
+        return cooldown
 
 except Exception as e:
     logging.exception("Setting up config failed:")
