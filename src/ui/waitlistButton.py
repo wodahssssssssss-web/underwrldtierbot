@@ -5,8 +5,9 @@ import datetime
 from src.database import databaseManager
 from src.utils.mojang import getuserid
 from src.utils.loadConfig import (
-    messages, listGamemodes, cooldown,
-    listHighTiers, highTicketCategoryName, roleNames, get_waitlist_role_name
+    messages, listGamemodes, cooldown, boosterCooldown,
+    listHighTiers, highTicketCategoryName, roleNames, get_waitlist_role_name,
+    get_cooldown_for_member
 )
 from src.utils import format
 
@@ -39,9 +40,10 @@ class PanelView(ui.View):
                 return
 
             lastTest = (await databaseManager.getLastTest(interaction.user.id))[0]
-            if int(datetime.datetime.now().timestamp()) - lastTest <= cooldown * 60:
+            member_cooldown = get_cooldown_for_member(interaction.user)
+            if int(datetime.datetime.now().timestamp()) - lastTest <= member_cooldown * 60:
                 await interaction.response.send_message(
-                    f"You can queue again at: <t:{lastTest + (cooldown * 60)}:f>", ephemeral=True
+                    f"You can queue again at: <t:{lastTest + (member_cooldown * 60)}:f>", ephemeral=True
                 )
                 return
 
