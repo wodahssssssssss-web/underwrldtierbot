@@ -29,7 +29,8 @@ GH_HEADERS = {
 }
 
 # Website mode keys (index.html MODE_KEYS_NO_OVERALL) and tier keys (TIER_KEYS)
-MODES   = ["vanilla", "uhc", "pot", "nethop", "smp", "sword", "axe", "mace"]
+MODES   = ["vanilla", "uhc", "pot", "nethop", "smp", "sword", "axe", "mace",
+           "cart", "spearmace", "diamondsmp"]
 TIERS   = ["HT1", "LT1", "HT2", "LT2", "HT3", "LT3", "HT4", "LT4", "HT5", "LT5",
            "RHT1", "RLT1", "RHT2", "RLT2"]
 REGIONS = ["NA", "EU", "AU", "AS"]
