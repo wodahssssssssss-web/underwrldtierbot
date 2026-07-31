@@ -134,7 +134,7 @@ gamemodes:
 # ── Queue channels category ────────────────────────────────────────────────────
 # All gamemode queue channels will sit inside this Discord category.
 # Set to null to place them at the top level with no category.
-queue_category: "Waitlists"
+queue_category: "🕰Waitlists"
 
 # ── Database ───────────────────────────────────────────────────────────────────
 # options: "sqlite"  (default, no setup needed)
