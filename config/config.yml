@@ -115,6 +115,21 @@ gamemodes:
         emoji:         "💎"
         queue_channel: "💎crystal-waitlist"
         role_ping:     "Waitlist Crystal PvP"
+    cart:
+        display:       "Cart PvP"
+        emoji:         "🛒"
+        queue_channel: "🛒cart-waitlist"
+        role_ping:     "Waitlist Cart PvP"
+    spearmace:
+        display:       "Spear Mace"
+        emoji:         "🔱"
+        queue_channel: "🔱spearmace-waitlist"
+        role_ping:     "Waitlist Spear Mace"
+    diamondsmp:
+        display:       "Diamond SMP"
+        emoji:         "💠"
+        queue_channel: "💠diamondsmp-waitlist"
+        role_ping:     "Waitlist Diamond SMP"
 
 # ── Queue channels category ────────────────────────────────────────────────────
 # All gamemode queue channels will sit inside this Discord category.
