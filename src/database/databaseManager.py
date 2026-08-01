@@ -30,6 +30,12 @@ async def userExists(discordID: int) -> bool:
 async def getLastTest(discordID: int):
     return await db.getLastTest(discordID)
 
+async def getLastTestForGamemode(discordID: int, gamemode: str):
+    return await db.getLastTestForGamemode(discordID, gamemode)
+
+async def resetGamemodeCooldowns(discordID: int) -> bool:
+    return await db.resetGamemodeCooldowns(discordID)
+
 async def getTier(discordID: int):
     return await db.getTier(discordID)
 
@@ -50,3 +56,6 @@ async def resetCooldown(discordID: int) -> bool:
 
 async def getUserInfo(discordID: int):
     return await db.getUserInfo(discordID=discordID)
+
+async def getAllUsers():
+    return await db.getAllUsers()
