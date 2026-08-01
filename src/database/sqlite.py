@@ -30,6 +30,13 @@ async def createTables(cursor: sqlite3.Cursor) -> bool:
         gamemode TEXT NOT NULL,
         restricted BOOLEAN NOT NULL
     )""")
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS gamemode_cooldowns (
+        discordID INTEGER NOT NULL,
+        gamemode TEXT NOT NULL,
+        lastTest INTEGER NOT NULL,
+        PRIMARY KEY (discordID, gamemode)
+    )""")
     return True
 
 @withConnection
@@ -72,6 +79,23 @@ async def addResult(cursor: sqlite3.Cursor, discordID: int, tier: str, gamemode:
     WHERE
         discordID = ?    
     """, (tier, lastTest, gamemode, discordID))
+    cursor.execute("""
+    INSERT INTO gamemode_cooldowns (discordID, gamemode, lastTest)
+    VALUES (?, ?, ?)
+    ON CONFLICT(discordID, gamemode) DO UPDATE SET lastTest = excluded.lastTest
+    """, (discordID, gamemode, lastTest))
+    return True
+
+@withConnection
+async def getLastTestForGamemode(cursor: sqlite3.Cursor, discordID: int, gamemode: str):
+    cursor.execute("""
+    SELECT lastTest FROM gamemode_cooldowns WHERE discordID = ? AND gamemode = ?
+    """, (discordID, gamemode))
+    return cursor.fetchone()
+
+@withConnection
+async def resetGamemodeCooldowns(cursor: sqlite3.Cursor, discordID: int) -> bool:
+    cursor.execute("DELETE FROM gamemode_cooldowns WHERE discordID = ?", (discordID,))
     return True
 
 @withConnection
@@ -142,3 +166,8 @@ async def getUserInfo(cursor: sqlite3.Cursor, discordID: int):
     FROM users WHERE discordID = ?
     """, (discordID,))
     return cursor.fetchone()
+
+@withConnection
+async def getAllUsers(cursor: sqlite3.Cursor):
+    cursor.execute("SELECT discordID, minecraftUsername, minecraftUUID FROM users")
+    return cursor.fetchall()
