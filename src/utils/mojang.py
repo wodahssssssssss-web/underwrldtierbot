@@ -8,3 +8,13 @@ async def getuserid(username: str) -> str:
                 return str(data.get("id"))
             else:
                 return "8667ba71b85a4004af54457a9734eed7" # default id of 'steve' (i think), very unlikely a person with the username steve will test <3, used a valid id so images will work
+
+async def getusername(uuid: str):
+    """Look up a player's CURRENT Mojang username from their (permanent) UUID.
+    Returns None if the UUID doesn't resolve (invalid/unknown)."""
+    async with aiohttp.ClientSession() as session:
+        async with session.get(f"https://sessionserver.mojang.com/session/minecraft/profile/{uuid}") as response:
+            if response.status == 200:
+                data = await response.json()
+                return data.get("name")
+            return None
