@@ -553,7 +553,10 @@ async def syncusername(
             return
 
         if current_username == old_username:
-            await interaction.followup.send(f"✅ **{old_username}** is already up to date.", ephemeral=True)
+            await interaction.followup.send(
+                f"✅ **{old_username}** is already up to date.\n-# uuid: `{uuid}` · mojang returned: `{current_username}`",
+                ephemeral=True
+            )
             return
 
         await databaseManager.updateUsername(discordID=user.id, username=current_username, uuid=uuid)
