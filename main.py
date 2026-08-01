@@ -500,6 +500,7 @@ async def removecooldown(
             await interaction.response.send_message("User not found in database.", ephemeral=True); return
 
         await databaseManager.resetCooldown(discordID=user.id)
+        await databaseManager.resetGamemodeCooldowns(discordID=user.id)
         await interaction.response.send_message(f"Cooldown removed for {user.mention}. They can queue immediately.", ephemeral=True)
     except Exception as e:
         logging.exception("Error in /removecooldown:")
@@ -525,6 +526,113 @@ async def info(
     except Exception as e:
         logging.exception("Error in /info:")
         await interaction.response.send_message(content=messages["error"], ephemeral=True)
+
+
+@bot.slash_command(name="syncusername", description="Re-fetch a player's current Minecraft username (if they changed IGN) and update their nickname")
+async def syncusername(
+    interaction: nextcord.Interaction,
+    user: nextcord.User = nextcord.SlashOption(description="Discord account", required=True),
+):
+    try:
+        if not has_staff_role(interaction.user):
+            await interaction.response.send_message(messages["no_permission"], ephemeral=True); return
+        if not await databaseManager.userExists(user.id):
+            await interaction.response.send_message("User not found in database.", ephemeral=True); return
+
+        await interaction.response.defer(ephemeral=True)
+
+        info = await databaseManager.getUserInfo(user.id)
+        old_username, _, _, _, _, uuid = info
+
+        current_username = await mojang.getusername(uuid)
+        if current_username is None:
+            await interaction.followup.send(
+                f"⚠️ Couldn't resolve UUID `{uuid}` — Mojang API may be down, or the account no longer exists.",
+                ephemeral=True
+            )
+            return
+
+        if current_username == old_username:
+            await interaction.followup.send(f"✅ **{old_username}** is already up to date.", ephemeral=True)
+            return
+
+        await databaseManager.updateUsername(discordID=user.id, username=current_username, uuid=uuid)
+
+        nick_note = ""
+        member = interaction.guild.get_member(user.id)
+        if member:
+            try:
+                await member.edit(nick=current_username[:32])
+            except nextcord.Forbidden:
+                nick_note = "\n⚠️ Couldn't update their nickname (permissions/role hierarchy)."
+            except Exception:
+                nick_note = "\n⚠️ Couldn't update their nickname."
+
+        await interaction.followup.send(
+            f"✅ Username updated: **{old_username}** → **{current_username}**.{nick_note}",
+            ephemeral=True
+        )
+    except Exception as e:
+        logging.exception("Error in /syncusername:")
+        await interaction.followup.send(content=messages["error"], ephemeral=True)
+
+
+@bot.slash_command(name="syncallusernames", description="Re-fetch current Minecraft usernames for every verified player (bulk)")
+async def syncallusernames(interaction: nextcord.Interaction):
+    try:
+        if not has_staff_role(interaction.user):
+            await interaction.response.send_message(messages["no_permission"], ephemeral=True); return
+
+        await interaction.response.defer(ephemeral=True)
+
+        users = await databaseManager.getAllUsers()
+        if not users:
+            await interaction.followup.send("No users found in the database.", ephemeral=True)
+            return
+
+        updated, unchanged, failed, nick_failed = 0, 0, 0, 0
+        changes = []
+
+        for discordID, old_username, uuid in users:
+            try:
+                current_username = await mojang.getusername(uuid)
+                if current_username is None:
+                    failed += 1
+                    continue
+                if current_username == old_username:
+                    unchanged += 1
+                    continue
+
+                await databaseManager.updateUsername(discordID=discordID, username=current_username, uuid=uuid)
+                changes.append(f"**{old_username}** → **{current_username}**")
+                updated += 1
+
+                member = interaction.guild.get_member(discordID)
+                if member:
+                    try:
+                        await member.edit(nick=current_username[:32])
+                    except Exception:
+                        nick_failed += 1
+            except Exception:
+                failed += 1
+
+            await asyncio.sleep(0.6)  # be gentle with the Mojang API
+
+        summary = (
+            f"✅ Sync complete.\n"
+            f"**{updated}** updated, **{unchanged}** already current, **{failed}** failed to resolve"
+            + (f", **{nick_failed}** nickname updates failed" if nick_failed else "") + "."
+        )
+        if changes:
+            preview = "\n".join(changes[:20])
+            if len(changes) > 20:
+                preview += f"\n…and {len(changes) - 20} more."
+            summary += "\n\n" + preview
+
+        await interaction.followup.send(summary, ephemeral=True)
+    except Exception as e:
+        logging.exception("Error in /syncallusernames:")
+        await interaction.followup.send(content=messages["error"], ephemeral=True)
 
 
 @bot.slash_command(name="add", description="Adds a user to the current ticket channel")
