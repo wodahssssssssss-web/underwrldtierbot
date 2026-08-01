@@ -1,13 +1,11 @@
 import nextcord
 from nextcord import ui
-import datetime
 
 from src.database import databaseManager
 from src.utils.mojang import getuserid
 from src.utils.loadConfig import (
-    messages, listGamemodes, cooldown, boosterCooldown,
-    listHighTiers, highTicketCategoryName, roleNames, get_waitlist_role_name,
-    get_cooldown_for_member
+    messages, listGamemodes,
+    listHighTiers, highTicketCategoryName, roleNames, get_waitlist_role_name
 )
 from src.utils import format
 
@@ -37,14 +35,6 @@ class PanelView(ui.View):
         if exists:
             if await databaseManager.isRestriced(interaction.user.id):
                 await interaction.response.send_message("You are currently restricted.", ephemeral=True)
-                return
-
-            lastTest = (await databaseManager.getLastTest(interaction.user.id))[0]
-            member_cooldown = get_cooldown_for_member(interaction.user)
-            if int(datetime.datetime.now().timestamp()) - lastTest <= member_cooldown * 60:
-                await interaction.response.send_message(
-                    f"You can queue again at: <t:{lastTest + (member_cooldown * 60)}:f>", ephemeral=True
-                )
                 return
 
             current_tier = (await databaseManager.getTier(interaction.user.id))[0]
@@ -133,8 +123,17 @@ class VerifyForm(ui.Modal):
             if verified_role:
                 await interaction.user.add_roles(verified_role)
 
+            # Set their server nickname to their IGN
+            nick_warning = ""
+            try:
+                await interaction.user.edit(nick=self.ign.value[:32])
+            except nextcord.Forbidden:
+                nick_warning = "\n⚠️ Couldn't update your nickname (bot may lack permission or your role is above the bot's)."
+            except Exception:
+                nick_warning = "\n⚠️ Couldn't update your nickname."
+
             await interaction.response.send_message(
-                f"✅ Verified! IGN set to **{self.ign.value}** on **{self.server.value}**.\nYou can now click **Request Test** to join a gamemode waitlist.",
+                f"✅ Verified! IGN set to **{self.ign.value}** on **{self.server.value}**.\nYou can now click **Request Test** to join a gamemode waitlist.{nick_warning}",
                 ephemeral=True
             )
 
