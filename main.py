@@ -333,6 +333,23 @@ async def next(
 
         member: nextcord.Member = await interaction.guild.fetch_member(user_result[0])
 
+        # ── Cooldown check happens at TEST time, not at join time ──────────
+        # Players can hold the waitlist role while on cooldown, but can't
+        # actually be tested for that specific gamemode until it expires.
+        member_cooldown = get_cooldown_for_member(member)
+        now_ts = int(datetime.now(timezone.utc).timestamp())
+        cd_row = await databaseManager.getLastTestForGamemode(member.id, gm_key)
+        last_test = cd_row[0] if cd_row else 0
+        if now_ts - last_test <= member_cooldown * 60:
+            unlock_ts = last_test + (member_cooldown * 60)
+            await interaction.response.send_message(
+                f"❌ Can't test **{member.display_name}** — they're on cooldown for **{listGamemodes[gm_key]['display']}** "
+                f"until <t:{unlock_ts}:f> (<t:{unlock_ts}:R>).\n"
+                f"They've been removed from this queue — they'll need to rejoin the waitlist once their cooldown ends.",
+                ephemeral=True
+            )
+            return
+
         ticket_cat = get_category_by_name(interaction.guild, ticketCategoryName)
         if ticket_cat is None:
             await interaction.response.send_message(content=messages["error"], ephemeral=True); return
