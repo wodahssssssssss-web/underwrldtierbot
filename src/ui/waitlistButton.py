@@ -132,32 +132,9 @@ class PanelView(ui.View):
                 await interaction.response.send_message("You are currently restricted.", ephemeral=True)
                 return
 
-            current_tier = (await databaseManager.getTier(member.id))[0]
-            if current_tier not in listHighTiers:
-                await interaction.response.send_message(
-                    f"You don't currently qualify for High Tier Testing (your tier: **{current_tier}**).",
-                    ephemeral=True
-                )
-                return
-
-            cat = nextcord.utils.get(interaction.guild.categories, name=highTicketCategoryName)
-            if cat is None:
-                await interaction.response.send_message(
-                    "Bot not set up correctly: high-tier ticket category not found.", ephemeral=True
-                )
-                return
-
-            ticket_ch = await interaction.guild.create_text_channel(name=f"hightest-{member.name}", category=cat)
-            overwrite = nextcord.PermissionOverwrite(view_channel=True, send_messages=True)
-            await ticket_ch.set_permissions(member, overwrite=overwrite)
-
-            messageData = await databaseManager.getUserTicket(member.id)
-            ticketMessage = format.formathighticketmessage(
-                username=messageData[0], tier=messageData[1], uuid=messageData[3]
-            )
-            await ticket_ch.send(content=f"<@{member.id}>", embed=nextcord.Embed.from_dict(ticketMessage))
+            view = HighTierGamemodeSelectView()
             await interaction.response.send_message(
-                f"A high-tier ticket has been created: <#{ticket_ch.id}>", ephemeral=True
+                "Select the gamemode you want High Tier Testing for:", view=view, ephemeral=True
             )
         except Exception:
             await interaction.response.send_message(content=messages["error"], ephemeral=True)
@@ -259,6 +236,61 @@ class RemoveWaitlistSelect(ui.Select):
             display = listGamemodes[gm_key]["display"]
             await leave_waitlist(interaction.user, gm_key)
             await interaction.response.edit_message(content=f"❌ Left the waitlist for **{display}**.", view=None)
+        except Exception:
+            await interaction.response.edit_message(content=messages["error"], view=None)
+
+
+# ── High Tier Testing — pick a gamemode, gated by per-gamemode tier ────────────
+
+class HighTierGamemodeSelectView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=120)
+        self.add_item(HighTierGamemodeSelect())
+
+
+class HighTierGamemodeSelect(ui.Select):
+    def __init__(self):
+        options = [
+            nextcord.SelectOption(label=gm_data["display"], value=gm_key, emoji=gm_data.get("emoji"))
+            for gm_key, gm_data in listGamemodes.items()
+        ]
+        super().__init__(placeholder="Choose a gamemode…", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: nextcord.Interaction):
+        try:
+            member = interaction.user
+            gm_key = self.values[0]
+            display = listGamemodes[gm_key]["display"]
+
+            row = await databaseManager.getTierForGamemode(member.id, gm_key)
+            gm_tier = row[0] if row else "none"
+
+            if gm_tier not in listHighTiers:
+                await interaction.response.edit_message(
+                    content=f"❌ You're not allowed to — you need **HT3 or better** in **{display}** (your tier: **{gm_tier}**).",
+                    view=None
+                )
+                return
+
+            cat = nextcord.utils.get(interaction.guild.categories, name=highTicketCategoryName)
+            if cat is None:
+                await interaction.response.edit_message(
+                    content="Bot not set up correctly: high-tier ticket category not found.", view=None
+                )
+                return
+
+            ticket_ch = await interaction.guild.create_text_channel(name=f"hightest-{member.name}-{gm_key}", category=cat)
+            overwrite = nextcord.PermissionOverwrite(view_channel=True, send_messages=True)
+            await ticket_ch.set_permissions(member, overwrite=overwrite)
+
+            messageData = await databaseManager.getUserTicket(member.id)
+            ticketMessage = format.formathighticketmessage(
+                username=messageData[0], tier=gm_tier, uuid=messageData[3], gamemode=display
+            )
+            await ticket_ch.send(content=f"<@{member.id}>", embed=nextcord.Embed.from_dict(ticketMessage))
+            await interaction.response.edit_message(
+                content=f"✅ A high-tier ticket for **{display}** has been created: <#{ticket_ch.id}>", view=None
+            )
         except Exception:
             await interaction.response.edit_message(content=messages["error"], view=None)
 
