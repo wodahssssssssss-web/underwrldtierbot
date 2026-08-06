@@ -7,6 +7,10 @@
         "value": "{{USERNAME}}"
       },
       {
+        "name": "Gamemode",
+        "value": "{{GAMEMODE}}"
+      },
+      {
         "name": "Tier",
         "value": "{{TIER}}"
       }
