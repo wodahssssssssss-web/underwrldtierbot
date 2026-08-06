@@ -29,7 +29,10 @@ except Exception as e:
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s:%(levelname)s:%(name)s: %(message)s",
-    handlers=[logging.FileHandler(f"logs/logs-{time.time()}.log")]
+    handlers=[
+        logging.FileHandler(f"logs/logs-{time.time()}.log"),
+        logging.StreamHandler()
+    ]
 )
 
 load_dotenv()
