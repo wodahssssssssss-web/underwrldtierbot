@@ -1,0 +1,17 @@
+{
+    "title": "✅ Underwrld Tiers Verification",
+    "description": "⚠️ **You must be verified to get a tier test.** No verify = no queue, no results, no tier roles.",
+    "color": 14495300,
+    "fields": [
+        {
+            "name": "How it works",
+            "value": "1. Click **✅ Verify** below.\n2. Enter your Minecraft username when prompted.",
+            "inline": false
+        },
+        {
+            "name": "",
+            "value": ":octagonal_sign: **Failure to provide authentic information will result in a denied test.**",
+            "inline": false
+        }
+    ]
+}
