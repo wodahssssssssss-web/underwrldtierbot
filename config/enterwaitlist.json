@@ -1,11 +1,11 @@
 {
-    "title": ":video_game: Underwrld Tiers Waitlists",
-    "description": "Use the buttons below to get started.\n\n**Verify** your IGN and preferred server first, then use **Request Test** to select which gamemodes you want to be tested in.",
+    "title": "🏆 Underwrld Tiers · Waitlists",
+    "description": "Pick a gamemode below to **join** its waitlist and unlock the dedicated queue channel.\nPick the same gamemode again to leave that waitlist.",
     "color": 14495300,
     "fields": [
         {
-            "name": "Requirements",
-            "value": "You must have the **Verified** role to request a test.\nMake sure your IGN and server are up to date before requesting.",
+            "name": "🔒 How it works",
+            "value": "⚠️ **You must be verified to join a waitlist or get tested.** No verify = no queue, no results, no tier roles.\n\n1. Click **✅ Verify** below.\n2. Enter your Minecraft username when prompted.\n\nHit **🍀 My Cooldowns** to check remaining time across every gamemode.\nHit **🚫 Remove Waitlist** to pick a specific waitlist role to drop.",
             "inline": false
         },
         {
