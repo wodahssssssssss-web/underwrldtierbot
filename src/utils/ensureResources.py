@@ -102,6 +102,7 @@ async def ensure_all(guild: nextcord.Guild) -> None:
 
     # ── Global channels ────────────────────────────────────────────────────────
     await _get_or_create_text_channel(guild, channelNames["announcements"])
+    await _get_or_create_text_channel(guild, channelNames["verify"])
     await _get_or_create_text_channel(guild, channelNames["join_queue"])
     await _get_or_create_text_channel(guild, channelNames["tester_logs"])
 
