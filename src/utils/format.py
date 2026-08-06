@@ -50,9 +50,8 @@ def formatqueue(capacity, queue, testerCapacity, testers):
     
     return formatted_message
 
-def formatticketmessage(username, tier, server, uuid):
-    formatted_message = json.dumps(ticketmessage).replace("{{SERVER}}", server)
-    formatted_message = formatted_message.replace("{{USERNAME}}", username)
+def formatticketmessage(username, tier, uuid):
+    formatted_message = json.dumps(ticketmessage).replace("{{USERNAME}}", username)
     formatted_message = formatted_message.replace("{{TIER}}", tier)
     formatted_message = formatted_message.replace("{{THUMBNAIL_URL}}", f"https://render.crafty.gg/3d/bust/{uuid}")
     return json.loads(formatted_message)
