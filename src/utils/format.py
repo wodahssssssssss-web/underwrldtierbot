@@ -11,6 +11,9 @@ with open("config/noqueue.json", "r") as file:
 with open("config/enterwaitlist.json", "r") as file:
     enterwaitlistmessage = json.load(file)
 
+with open("config/verify.json", "r") as file:
+    verifymessage = json.load(file)
+
 with open("config/queue.json", "r") as file:
     queuemessage = json.load(file)
 
