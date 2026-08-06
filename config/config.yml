@@ -31,6 +31,7 @@ roles:
 # ── Global channels (names, not IDs) ──────────────────────────────────────────
 channels:
     announcements: "🏆results"  # /result posts placement embeds here
+    verify:        "⚠️verify"              # /setupqueue posts the Verify panel here
     join_queue:    "💡request-test"          # /setupqueue posts the gamemode picker here
     tester_logs:   "tester-logs"          # ticket transcripts are posted here when a ticket closes
 
