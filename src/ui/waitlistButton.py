@@ -61,17 +61,24 @@ async def leave_waitlist(member: nextcord.Member, gm_key: str):
             await member.remove_roles(generic_role)
 
 
-# ── Panel View — posted in #request-test ──────────────────────────────────────
+# ── Verify Panel View — posted in the verify channel ───────────────────────────
 
-class PanelView(ui.View):
+class VerifyPanelView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        self.add_item(WaitlistToggleSelect())
 
     @nextcord.ui.button(label="Verify", style=nextcord.ButtonStyle.danger, custom_id="panelVerify", emoji="✅", row=0)
     async def verify_button(self, button: nextcord.ui.Button, interaction: nextcord.Interaction):
         modal = VerifyForm()
         await interaction.response.send_modal(modal)
+
+
+# ── Waitlist Panel View — posted in #request-test ──────────────────────────────
+
+class PanelView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(WaitlistToggleSelect())
 
     @nextcord.ui.button(label="My Cooldowns", style=nextcord.ButtonStyle.secondary, custom_id="panelMyCooldowns", emoji="🍀", row=2)
     async def my_cooldowns_button(self, button: nextcord.ui.Button, interaction: nextcord.Interaction):
@@ -111,13 +118,13 @@ class PanelView(ui.View):
             verified_role = nextcord.utils.get(interaction.guild.roles, name="Verified")
             if verified_role and verified_role not in member.roles:
                 await interaction.response.send_message(
-                    "You must verify your IGN first by clicking **Verify**.", ephemeral=True
+                    "You must verify your IGN first in the verify channel.", ephemeral=True
                 )
                 return
 
             if not await databaseManager.userExists(member.id):
                 await interaction.response.send_message(
-                    "Please click **Verify** first to register your IGN and server.", ephemeral=True
+                    "Please verify first to register your IGN.", ephemeral=True
                 )
                 return
 
@@ -196,7 +203,7 @@ class WaitlistToggleSelect(ui.Select):
             verified_role = nextcord.utils.get(interaction.guild.roles, name="Verified")
             if verified_role and verified_role not in member.roles:
                 await interaction.response.send_message(
-                    "You must verify your IGN first by clicking **Verify**.", ephemeral=True
+                    "You must verify your IGN first in the verify channel.", ephemeral=True
                 )
                 return
 
@@ -207,7 +214,7 @@ class WaitlistToggleSelect(ui.Select):
             profile = await get_verified_profile(member.id)
             if profile is None:
                 await interaction.response.send_message(
-                    "Please click **Verify** first to register your IGN and server.", ephemeral=True
+                    "Please verify first to register your IGN.", ephemeral=True
                 )
                 return
             ign, _tier, server, uuid = profile
@@ -303,7 +310,7 @@ class VerifyForm(ui.Modal):
                 nick_warning = "\n⚠️ Couldn't update your nickname."
 
             await interaction.response.send_message(
-                f"✅ Verified! IGN set to **{self.ign.value}**.\nUse the **Choose a waitlist** dropdown below to join a gamemode.{nick_warning}",
+                f"✅ Verified! IGN set to **{self.ign.value}**.\nHead over to the request-test channel and use the **Choose a waitlist** dropdown to join a gamemode.{nick_warning}",
                 ephemeral=True
             )
 
