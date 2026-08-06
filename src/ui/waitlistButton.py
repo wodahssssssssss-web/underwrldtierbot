@@ -1,13 +1,64 @@
 import nextcord
 from nextcord import ui
+from datetime import datetime, timezone
 
 from src.database import databaseManager
 from src.utils.mojang import getuserid
 from src.utils.loadConfig import (
     messages, listGamemodes,
-    listHighTiers, highTicketCategoryName, roleNames, get_waitlist_role_name
+    listHighTiers, highTicketCategoryName, roleNames, get_waitlist_role_name,
+    get_cooldown_for_member
 )
 from src.utils import format
+
+
+# ── Shared helpers ─────────────────────────────────────────────────────────────
+
+def has_waitlist_role(member: nextcord.Member, gm_key: str) -> bool:
+    role_name = get_waitlist_role_name(gm_key)
+    return any(r.name == role_name for r in member.roles)
+
+
+async def get_verified_profile(discord_id: int):
+    """Returns (ign, tier, server, uuid) from the DB, or None if never verified."""
+    if not await databaseManager.userExists(discord_id):
+        return None
+    return await databaseManager.getUserTicket(discord_id)  # (username, tier, server, uuid)
+
+
+async def join_waitlist(member: nextcord.Member, gm_key: str, ign: str, uuid: str, server: str) -> str:
+    """Adds the gamemode + generic waitlist roles and records the gamemode on the user's row.
+    Returns a channel mention (or #channel-name fallback) for the confirmation message."""
+    await databaseManager.addUser(
+        discordID=member.id, minecraftUsername=ign, minecraftUUID=uuid,
+        tier="none", lastTest=0, server=server, gamemode=gm_key
+    )
+
+    role = nextcord.utils.get(member.guild.roles, name=get_waitlist_role_name(gm_key))
+    if role:
+        await member.add_roles(role)
+
+    generic_role = nextcord.utils.get(member.guild.roles, name=roleNames["waitlist"])
+    if generic_role:
+        await member.add_roles(generic_role)
+
+    ch = nextcord.utils.get(member.guild.text_channels, name=listGamemodes[gm_key]["queue_channel"])
+    return f"<#{ch.id}>" if ch else f"#{listGamemodes[gm_key]['queue_channel']}"
+
+
+async def leave_waitlist(member: nextcord.Member, gm_key: str):
+    """Removes the gamemode's waitlist role, and the generic waitlist role too
+    if this was the last gamemode waitlist the member was on."""
+    role = nextcord.utils.get(member.guild.roles, name=get_waitlist_role_name(gm_key))
+    if role and role in member.roles:
+        await member.remove_roles(role)
+
+    remaining_waitlist_names = [get_waitlist_role_name(k) for k in listGamemodes if k != gm_key]
+    still_has_other = any(r.name in remaining_waitlist_names for r in member.roles)
+    if not still_has_other:
+        generic_role = nextcord.utils.get(member.guild.roles, name=roleNames["waitlist"])
+        if generic_role and generic_role in member.roles:
+            await member.remove_roles(generic_role)
 
 
 # ── Panel View — posted in #request-test ──────────────────────────────────────
@@ -15,90 +66,209 @@ from src.utils import format
 class PanelView(ui.View):
     def __init__(self):
         super().__init__(timeout=None)
+        self.add_item(WaitlistToggleSelect())
 
     @nextcord.ui.button(label="Verify", style=nextcord.ButtonStyle.danger, custom_id="panelVerify", emoji="✅", row=0)
     async def verify_button(self, button: nextcord.ui.Button, interaction: nextcord.Interaction):
         modal = VerifyForm()
         await interaction.response.send_modal(modal)
 
-    @nextcord.ui.button(label="Request Test", style=nextcord.ButtonStyle.danger, custom_id="panelRequestTest", emoji="🎮", row=0)
-    async def request_test_button(self, button: nextcord.ui.Button, interaction: nextcord.Interaction):
-        # Must be verified first
-        verified_role = nextcord.utils.get(interaction.guild.roles, name="Verified")
-        if verified_role and verified_role not in interaction.user.roles:
-            await interaction.response.send_message(
-                "You must verify your IGN first by clicking **Verify**.", ephemeral=True
-            )
-            return
+    @nextcord.ui.button(label="My Cooldowns", style=nextcord.ButtonStyle.secondary, custom_id="panelMyCooldowns", emoji="🍀", row=2)
+    async def my_cooldowns_button(self, button: nextcord.ui.Button, interaction: nextcord.Interaction):
+        try:
+            member = interaction.user
+            member_cooldown = get_cooldown_for_member(member)  # minutes
+            now_ts = int(datetime.now(timezone.utc).timestamp())
 
-        exists = await databaseManager.userExists(interaction.user.id)
-        if exists:
-            if await databaseManager.isRestriced(interaction.user.id):
+            lines = []
+            for gm_key, gm_data in listGamemodes.items():
+                row = await databaseManager.getLastTestForGamemode(member.id, gm_key)
+                last_test = row[0] if row else 0
+                unlock_ts = last_test + (member_cooldown * 60)
+                if now_ts >= unlock_ts:
+                    lines.append(f"✅ **{gm_data['display']}** - ready now")
+                else:
+                    lines.append(f"⏳ **{gm_data['display']}** - ready <t:{unlock_ts}:R>")
+
+            days = round(member_cooldown / (60 * 24), 1)
+            days_text = str(int(days)) if days == int(days) else str(days)
+
+            embed = nextcord.Embed(
+                title="🍀 Your cooldowns",
+                description="\n".join(lines),
+                color=0x2ecc71
+            )
+            embed.set_footer(text=f"Your cooldown length: {days_text} days per test")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        except Exception:
+            await interaction.response.send_message(content=messages["error"], ephemeral=True)
+
+    @nextcord.ui.button(label="High Tier Testing", style=nextcord.ButtonStyle.success, custom_id="panelHighTierTesting", emoji="🏅", row=2)
+    async def high_tier_button(self, button: nextcord.ui.Button, interaction: nextcord.Interaction):
+        try:
+            member = interaction.user
+
+            verified_role = nextcord.utils.get(interaction.guild.roles, name="Verified")
+            if verified_role and verified_role not in member.roles:
+                await interaction.response.send_message(
+                    "You must verify your IGN first by clicking **Verify**.", ephemeral=True
+                )
+                return
+
+            if not await databaseManager.userExists(member.id):
+                await interaction.response.send_message(
+                    "Please click **Verify** first to register your IGN and server.", ephemeral=True
+                )
+                return
+
+            if await databaseManager.isRestriced(member.id):
                 await interaction.response.send_message("You are currently restricted.", ephemeral=True)
                 return
 
-            current_tier = (await databaseManager.getTier(interaction.user.id))[0]
-            if current_tier in listHighTiers:
-                cat = nextcord.utils.get(interaction.guild.categories, name=highTicketCategoryName)
-                if cat is None:
-                    await interaction.response.send_message(
-                        "Bot not set up correctly: high-tier ticket category not found.", ephemeral=True
-                    )
-                    return
-
-                ticket_ch = await interaction.guild.create_text_channel(
-                    name=f"hightest-{interaction.user.name}", category=cat
-                )
-                overwrite = nextcord.PermissionOverwrite(view_channel=True, send_messages=True)
-                await ticket_ch.set_permissions(interaction.user, overwrite=overwrite)
-
-                messageData = await databaseManager.getUserTicket(interaction.user.id)
-                ticketMessage = format.formathighticketmessage(
-                    username=messageData[0], tier=messageData[1], uuid=messageData[3]
-                )
-                await ticket_ch.send(
-                    content=f"<@{interaction.user.id}>",
-                    embed=nextcord.Embed.from_dict(ticketMessage)
-                )
+            current_tier = (await databaseManager.getTier(member.id))[0]
+            if current_tier not in listHighTiers:
                 await interaction.response.send_message(
-                    f"A high-tier ticket has been created: <#{ticket_ch.id}>", ephemeral=True
+                    f"You don't currently qualify for High Tier Testing (your tier: **{current_tier}**).",
+                    ephemeral=True
                 )
                 return
 
-        # Open gamemode selector directly (they already verified IGN)
-        if exists:
-            view = GamemodeSelectView(ign=None, uuid=None, server=None, from_db=True, discord_id=interaction.user.id)
-            await interaction.response.send_message(
-                "**Select the gamemode(s) you want to be tested in:**",
-                view=view,
-                ephemeral=True
+            cat = nextcord.utils.get(interaction.guild.categories, name=highTicketCategoryName)
+            if cat is None:
+                await interaction.response.send_message(
+                    "Bot not set up correctly: high-tier ticket category not found.", ephemeral=True
+                )
+                return
+
+            ticket_ch = await interaction.guild.create_text_channel(name=f"hightest-{member.name}", category=cat)
+            overwrite = nextcord.PermissionOverwrite(view_channel=True, send_messages=True)
+            await ticket_ch.set_permissions(member, overwrite=overwrite)
+
+            messageData = await databaseManager.getUserTicket(member.id)
+            ticketMessage = format.formathighticketmessage(
+                username=messageData[0], tier=messageData[1], uuid=messageData[3]
             )
-        else:
+            await ticket_ch.send(content=f"<@{member.id}>", embed=nextcord.Embed.from_dict(ticketMessage))
             await interaction.response.send_message(
-                "Please click **Verify** first to register your IGN and server.", ephemeral=True
+                f"A high-tier ticket has been created: <#{ticket_ch.id}>", ephemeral=True
             )
+        except Exception:
+            await interaction.response.send_message(content=messages["error"], ephemeral=True)
+
+    @nextcord.ui.button(label="Remove Waitlist", style=nextcord.ButtonStyle.danger, custom_id="panelRemoveWaitlist", emoji="🚫", row=2)
+    async def remove_waitlist_button(self, button: nextcord.ui.Button, interaction: nextcord.Interaction):
+        try:
+            member = interaction.user
+            held_keys = [gm_key for gm_key in listGamemodes if has_waitlist_role(member, gm_key)]
+            if not held_keys:
+                await interaction.response.send_message("You are not on any waitlist.", ephemeral=True)
+                return
+
+            view = RemoveWaitlistView(held_keys)
+            await interaction.response.send_message("Choose a waitlist to leave:", view=view, ephemeral=True)
+        except Exception:
+            await interaction.response.send_message(content=messages["error"], ephemeral=True)
+
+
+# ── Waitlist toggle — persistent select in the panel itself ───────────────────
+# Picking a gamemode you're NOT on joins that waitlist.
+# Picking a gamemode you ARE already on leaves it.
+
+class WaitlistToggleSelect(ui.Select):
+    def __init__(self):
+        options = [
+            nextcord.SelectOption(label=gm_data["display"], value=gm_key, emoji=gm_data.get("emoji"))
+            for gm_key, gm_data in listGamemodes.items()
+        ]
+        super().__init__(
+            placeholder="Choose a waitlist…",
+            min_values=1,
+            max_values=1,
+            options=options,
+            custom_id="panelWaitlistToggleSelect",
+            row=1
+        )
+
+    async def callback(self, interaction: nextcord.Interaction):
+        try:
+            member = interaction.user
+
+            verified_role = nextcord.utils.get(interaction.guild.roles, name="Verified")
+            if verified_role and verified_role not in member.roles:
+                await interaction.response.send_message(
+                    "You must verify your IGN first by clicking **Verify**.", ephemeral=True
+                )
+                return
+
+            if await databaseManager.isRestriced(member.id):
+                await interaction.response.send_message("You are currently restricted.", ephemeral=True)
+                return
+
+            profile = await get_verified_profile(member.id)
+            if profile is None:
+                await interaction.response.send_message(
+                    "Please click **Verify** first to register your IGN and server.", ephemeral=True
+                )
+                return
+            ign, _tier, server, uuid = profile
+
+            gm_key = self.values[0]
+            display = listGamemodes[gm_key]["display"]
+
+            if has_waitlist_role(member, gm_key):
+                await leave_waitlist(member, gm_key)
+                await interaction.response.send_message(f"❌ Left the waitlist for **{display}**.", ephemeral=True)
+            else:
+                channel_mention = await join_waitlist(member, gm_key, ign, uuid, server)
+                await interaction.response.send_message(
+                    f"✅ Joined the waitlist for **{display}**!\nKeep an eye on {channel_mention} for when a queue opens.",
+                    ephemeral=True
+                )
+        except Exception:
+            await interaction.response.send_message(content=messages["error"], ephemeral=True)
+
+
+# ── Remove Waitlist — ephemeral picker showing only gamemodes you're on ────────
+
+class RemoveWaitlistView(ui.View):
+    def __init__(self, held_keys):
+        super().__init__(timeout=120)
+        self.add_item(RemoveWaitlistSelect(held_keys))
+
+
+class RemoveWaitlistSelect(ui.Select):
+    def __init__(self, held_keys):
+        options = [
+            nextcord.SelectOption(
+                label=listGamemodes[k]["display"], value=k, emoji=listGamemodes[k].get("emoji")
+            )
+            for k in held_keys
+        ]
+        super().__init__(placeholder="Choose a waitlist to leave…", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: nextcord.Interaction):
+        try:
+            gm_key = self.values[0]
+            display = listGamemodes[gm_key]["display"]
+            await leave_waitlist(interaction.user, gm_key)
+            await interaction.response.edit_message(content=f"❌ Left the waitlist for **{display}**.", view=None)
+        except Exception:
+            await interaction.response.edit_message(content=messages["error"], view=None)
 
 
 # ── Verify Modal — IGN and server ─────────────────────────────────────────────
 
 class VerifyForm(ui.Modal):
     def __init__(self):
-        super().__init__("Verify — Register your IGN & Server")
+        super().__init__("Verify — Register your IGN")
 
         self.ign = ui.TextInput(
             label="Minecraft Username",
             placeholder="Enter your in-game name",
             required=True
         )
-        self.server = ui.TextInput(
-            label="Preferred Test Server",
-            placeholder="e.g. Hypixel, PotPvP, etc.",
-            style=nextcord.TextInputStyle.short,
-            required=True
-        )
 
         self.add_item(self.ign)
-        self.add_item(self.server)
 
     async def callback(self, interaction: nextcord.Interaction):
         try:
@@ -107,14 +277,14 @@ class VerifyForm(ui.Modal):
                 await interaction.response.send_message("Minecraft username does not exist.", ephemeral=True)
                 return
 
-            # Save to DB with placeholder tier/gamemode
+            # Save to DB with placeholder tier/gamemode (server field removed — no longer collected)
             await databaseManager.addUser(
                 discordID=interaction.user.id,
                 minecraftUsername=self.ign.value,
                 minecraftUUID=uuid,
                 tier="none",
                 lastTest=0,
-                server=self.server.value,
+                server="N/A",
                 gamemode="none"
             )
 
@@ -133,117 +303,9 @@ class VerifyForm(ui.Modal):
                 nick_warning = "\n⚠️ Couldn't update your nickname."
 
             await interaction.response.send_message(
-                f"✅ Verified! IGN set to **{self.ign.value}** on **{self.server.value}**.\nYou can now click **Request Test** to join a gamemode waitlist.{nick_warning}",
+                f"✅ Verified! IGN set to **{self.ign.value}**.\nUse the **Choose a waitlist** dropdown below to join a gamemode.{nick_warning}",
                 ephemeral=True
             )
 
         except Exception as e:
             await interaction.response.send_message(content=messages["error"], ephemeral=True)
-
-
-# ── Gamemode Select — pick gamemode(s) ────────────────────────────────────────
-
-class GamemodeSelectView(ui.View):
-    def __init__(self, ign, uuid, server, from_db=False, discord_id=None):
-        super().__init__(timeout=120)
-        self.add_item(GamemodeSelect(ign=ign, uuid=uuid, server=server, from_db=from_db, discord_id=discord_id))
-
-
-class GamemodeSelect(ui.Select):
-    def __init__(self, ign, uuid, server, from_db=False, discord_id=None):
-        self.ign = ign
-        self.uuid = uuid
-        self.server = server
-        self.from_db = from_db
-        self.discord_id = discord_id
-
-        options = [
-            nextcord.SelectOption(
-                label=gm_data["display"],
-                value=gm_key,
-                emoji=gm_data.get("emoji")
-            )
-            for gm_key, gm_data in listGamemodes.items()
-        ]
-
-        super().__init__(
-            placeholder="Choose your gamemode(s)…",
-            min_values=1,
-            max_values=len(options),
-            options=options,
-            custom_id="gamemodeSelect"
-        )
-
-    async def callback(self, interaction: nextcord.Interaction):
-        try:
-            selected_keys = self.values
-
-            if self.from_db:
-                # Pull IGN/server/uuid from DB
-                info = await databaseManager.getResultInfo(interaction.user.id)
-                ign = info[0]
-                from src.utils.mojang import getuserid as _getuuid
-                uuid = await _getuuid(username=ign)
-                server_info = await databaseManager.getUserTicket(interaction.user.id)
-                server = server_info[2] if server_info else "Unknown"
-            else:
-                ign = self.ign
-                uuid = self.uuid
-                server = self.server
-
-            primary_key = selected_keys[0]
-
-            await databaseManager.addUser(
-                discordID=interaction.user.id,
-                minecraftUsername=ign,
-                minecraftUUID=uuid,
-                tier="none",
-                lastTest=0,
-                server=server,
-                gamemode=primary_key
-            )
-
-            # Remove old waitlist roles
-            all_waitlist_names = (
-                [get_waitlist_role_name(k) for k in listGamemodes]
-                + [roleNames["waitlist"]]
-            )
-            roles_to_remove = [r for r in interaction.user.roles if r.name in all_waitlist_names]
-            if roles_to_remove:
-                await interaction.user.remove_roles(*roles_to_remove)
-
-            # Add waitlist role for each selected gamemode
-            added_roles = []
-            for gm_key in selected_keys:
-                role = nextcord.utils.get(interaction.guild.roles, name=get_waitlist_role_name(gm_key))
-                if role:
-                    await interaction.user.add_roles(role)
-                    added_roles.append(listGamemodes[gm_key]["display"])
-
-            # Add generic waitlist role
-            generic_role = nextcord.utils.get(interaction.guild.roles, name=roleNames["waitlist"])
-            if generic_role:
-                await interaction.user.add_roles(generic_role)
-
-            # Build channel mentions
-            channel_mentions = []
-            for gm_key in selected_keys:
-                ch = nextcord.utils.get(
-                    interaction.guild.text_channels,
-                    name=listGamemodes[gm_key]["queue_channel"]
-                )
-                if ch:
-                    channel_mentions.append(f"<#{ch.id}>")
-                else:
-                    channel_mentions.append(f"#{listGamemodes[gm_key]['queue_channel']}")
-
-            gamemode_list = ", ".join(f"**{listGamemodes[k]['display']}**" for k in selected_keys)
-            channels_list = ", ".join(channel_mentions)
-
-            await interaction.response.edit_message(
-                content=f"✅ You've been added to the waitlist for {gamemode_list}!\nKeep an eye on {channels_list} for when a queue opens.",
-                view=None
-            )
-
-        except Exception as e:
-            await interaction.response.edit_message(content=messages["error"], view=None)
