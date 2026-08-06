@@ -360,7 +360,7 @@ async def next(
         await ticket_ch.set_permissions(member, overwrite=overwrite)
 
         messageData = await databaseManager.getUserTicket(member.id)
-        ticketMessage = format.formatticketmessage(username=messageData[0], tier=messageData[1], server=messageData[2], uuid=messageData[3])
+        ticketMessage = format.formatticketmessage(username=messageData[0], tier=messageData[1], uuid=messageData[3])
 
         # Only remove the waitlist role for the gamemode being tested
         gm_waitlist_role_name = get_waitlist_role_name(gm_key)
