@@ -37,6 +37,11 @@ async def createTables(cursor: sqlite3.Cursor) -> bool:
         lastTest INTEGER NOT NULL,
         PRIMARY KEY (discordID, gamemode)
     )""")
+    # Migration: add `tier` column for existing DBs created before per-gamemode tiers existed
+    cursor.execute("PRAGMA table_info(gamemode_cooldowns)")
+    existing_cols = [row[1] for row in cursor.fetchall()]
+    if "tier" not in existing_cols:
+        cursor.execute("ALTER TABLE gamemode_cooldowns ADD COLUMN tier TEXT DEFAULT 'none'")
     return True
 
 @withConnection
@@ -80,16 +85,23 @@ async def addResult(cursor: sqlite3.Cursor, discordID: int, tier: str, gamemode:
         discordID = ?    
     """, (tier, lastTest, gamemode, discordID))
     cursor.execute("""
-    INSERT INTO gamemode_cooldowns (discordID, gamemode, lastTest)
-    VALUES (?, ?, ?)
-    ON CONFLICT(discordID, gamemode) DO UPDATE SET lastTest = excluded.lastTest
-    """, (discordID, gamemode, lastTest))
+    INSERT INTO gamemode_cooldowns (discordID, gamemode, lastTest, tier)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(discordID, gamemode) DO UPDATE SET lastTest = excluded.lastTest, tier = excluded.tier
+    """, (discordID, gamemode, lastTest, tier))
     return True
 
 @withConnection
 async def getLastTestForGamemode(cursor: sqlite3.Cursor, discordID: int, gamemode: str):
     cursor.execute("""
     SELECT lastTest FROM gamemode_cooldowns WHERE discordID = ? AND gamemode = ?
+    """, (discordID, gamemode))
+    return cursor.fetchone()
+
+@withConnection
+async def getTierForGamemode(cursor: sqlite3.Cursor, discordID: int, gamemode: str):
+    cursor.execute("""
+    SELECT tier FROM gamemode_cooldowns WHERE discordID = ? AND gamemode = ?
     """, (discordID, gamemode))
     return cursor.fetchone()
 
