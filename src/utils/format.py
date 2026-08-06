@@ -59,9 +59,10 @@ def formatticketmessage(username, tier, uuid):
     formatted_message = formatted_message.replace("{{THUMBNAIL_URL}}", f"https://render.crafty.gg/3d/bust/{uuid}")
     return json.loads(formatted_message)
 
-def formathighticketmessage(username, tier, uuid):
+def formathighticketmessage(username, tier, uuid, gamemode="—"):
     formatted_message = json.dumps(highticketmessage).replace("{{USERNAME}}", username)
     formatted_message = formatted_message.replace("{{TIER}}", tier)
+    formatted_message = formatted_message.replace("{{GAMEMODE}}", gamemode)
     formatted_message = formatted_message.replace("{{THUMBNAIL_URL}}", f"https://render.crafty.gg/3d/bust/{uuid}")
     return json.loads(formatted_message)
 
