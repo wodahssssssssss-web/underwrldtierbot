@@ -9,10 +9,6 @@
       {
         "name": "Tier",
         "value": "{{TIER}}"
-      },
-      {
-        "name": "Server",
-        "value": "{{SERVER}}"
       }
     ],
     "thumbnail": {
