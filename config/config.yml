@@ -85,26 +85,6 @@ gamemodes:
         emoji:         "🪓"
         queue_channel: "🪓axe-waitlist"
         role_ping:     "Waitlist Axe"
-    uhc:
-        display:       "UHC"
-        emoji:         "🍎"
-        queue_channel: "🍊uhc-waitlist"
-        role_ping:     "Waitlist UHC"
-    smp:
-        display:       "SMP PvP"
-        emoji:         "🏕️"
-        queue_channel: "🧿smp-pvp-waitlist"
-        role_ping:     "Waitlist SMP PvP"
-    netherite:
-        display:       "Netherite OP"
-        emoji:         "🔥"
-        queue_channel: "🧪netherite-waitlist"
-        role_ping:     "Waitlist Netherite OP"
-    pot:
-        display:       "Pot PvP"
-        emoji:         "🧪"
-        queue_channel: "🌡pot-waitlist"
-        role_ping:     "Waitlist Pot PvP"
     mace:
         display:       "Mace PvP"
         emoji:         "🔨"
@@ -115,26 +95,46 @@ gamemodes:
         emoji:         "💎"
         queue_channel: "💎crystal-waitlist"
         role_ping:     "Waitlist Crystal PvP"
+    uhc:
+        display:       "UHC"
+        emoji:         "🍎"
+        queue_channel: "🍊uhc-waitlist"
+        role_ping:     "Waitlist UHC"
+    smp:
+        display:       "SMP PvP"
+        emoji:         "🏕️"
+        queue_channel: "🧿smp-pvp-waitlist"
+        role_ping:     "Waitlist SMP PvP"
     cart:
         display:       "Cart PvP"
         emoji:         "🛒"
         queue_channel: "🛒cart-waitlist"
         role_ping:     "Waitlist Cart PvP"
-    spearmace:
-        display:       "Spear Mace"
-        emoji:         "🔱"
-        queue_channel: "🔱spearmace-waitlist"
-        role_ping:     "Waitlist Spear Mace"
+    netherite:
+        display:       "Netherite Pot"
+        emoji:         "🔥"
+        queue_channel: "🧪netherite-waitlist"
+        role_ping:     "Waitlist Netherite Pot"
+    pot:
+        display:       "Diamond Pot"
+        emoji:         "🧪"
+        queue_channel: "🌡pot-waitlist"
+        role_ping:     "Waitlist Diamond Pot"
     diamondsmp:
         display:       "Diamond SMP"
         emoji:         "💠"
         queue_channel: "💠diamondsmp-waitlist"
         role_ping:     "Waitlist Diamond SMP"
+    spearmace:
+        display:       "Spear Mace"
+        emoji:         "🔱"
+        queue_channel: "🔱spearmace-waitlist"
+        role_ping:     "Waitlist Spear Mace"
 
 # ── Queue channels category ────────────────────────────────────────────────────
 # All gamemode queue channels will sit inside this Discord category.
 # Set to null to place them at the top level with no category.
-queue_category: "🕰Waitlists"
+queue_category: "Waitlists"
 
 # ── Database ───────────────────────────────────────────────────────────────────
 # options: "sqlite"  (default, no setup needed)
