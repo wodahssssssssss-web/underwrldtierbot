@@ -14,7 +14,7 @@ from src.utils.ensureResources import ensure_all
 from src.utils.transcript import post_transcript
 from src.utils import github
 from src.tierlistQueue import TierlistQueue
-from src.ui.waitlistButton import PanelView
+from src.ui.waitlistButton import PanelView, VerifyPanelView
 from src.ui.enterQueueButton import EnterQueueButton
 from src.ui.closeTicketButton import CloseTicketButton
 from src.database import databaseManager
@@ -76,6 +76,13 @@ async def setupBot():
         await ensure_all(guild)   # create any missing roles/channels/categories
         queue.resolveChannels(guild)
 
+    # Post the Verify panel
+    verify_ch = get_channel_by_name(channelNames["verify"])
+    if verify_ch is None:
+        sys.exit(f"Error: Channel '{channelNames['verify']}' not found")
+    await verify_ch.purge(limit=10, check=is_me)
+    await verify_ch.send(embed=nextcord.Embed.from_dict(format.verifymessage), view=VerifyPanelView())
+
     # Post the queue-select panel
     join_ch = get_channel_by_name(channelNames["join_queue"])
     if join_ch is None:
@@ -96,6 +103,7 @@ async def setupBot():
 @bot.event
 async def on_ready():
     print("Tier Testing bot has logged online ✅")
+    bot.add_view(VerifyPanelView())  # register persistent view for the Verify button
     bot.add_view(PanelView())  # register persistent view for buttons to work after restart
     try:
         await bot.sync_all_application_commands()
