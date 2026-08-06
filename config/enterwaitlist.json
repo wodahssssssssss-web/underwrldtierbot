@@ -4,8 +4,8 @@
     "color": 14495300,
     "fields": [
         {
-            "name": "🔒 How it works",
-            "value": "⚠️ **You must be verified to join a waitlist or get tested.** No verify = no queue, no results, no tier roles.\n\n1. Click **✅ Verify** below.\n2. Enter your Minecraft username when prompted.\n\nHit **🍀 My Cooldowns** to check remaining time across every gamemode.\nHit **🚫 Remove Waitlist** to pick a specific waitlist role to drop.",
+            "name": "🔒 Requirements",
+            "value": "You must be **Verified** first — head to the verify channel if you haven't.\nHit **🍀 My Cooldowns** to check remaining time across every gamemode.\nHit **🚫 Remove Waitlist** to pick a specific waitlist role to drop.",
             "inline": false
         },
         {
