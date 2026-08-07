@@ -175,43 +175,58 @@ async def results(
         await databaseManager.addResult(discordID=user.id, tier=newtier, gamemode=gm_key)
 
         member = interaction.guild.get_member(user.id)
+        if member is None:
+            try:
+                member = await interaction.guild.fetch_member(user.id)
+            except nextcord.NotFound:
+                logging.warning(f"[results] Member {user.id} not found in guild — skipping role updates.")
+                member = None
+            except Exception:
+                logging.exception(f"[results] Failed to fetch member {user.id}:")
+                member = None
 
-        # Only remove the waitlist role for the gamemode that was tested
-        gm_waitlist_role_name = get_waitlist_role_name(gm_key)
-        gm_waitlist_role = get_role_by_name(interaction.guild, gm_waitlist_role_name)
-        if gm_waitlist_role and gm_waitlist_role in member.roles:
-            await member.remove_roles(gm_waitlist_role, reason="Waitlist role removed by /results")
+        if member is not None:
+            # Only remove the waitlist role for the gamemode that was tested
+            gm_waitlist_role_name = get_waitlist_role_name(gm_key)
+            gm_waitlist_role = get_role_by_name(interaction.guild, gm_waitlist_role_name)
+            if gm_waitlist_role and gm_waitlist_role in member.roles:
+                await member.remove_roles(gm_waitlist_role, reason="Waitlist role removed by /results")
 
-        # Remove the generic Waitlist role only if they hold no other gamemode waitlist roles
-        remaining_waitlist = [
-            get_waitlist_role_name(k) for k in listGamemodeKeys if k != gm_key
-        ]
-        has_other_waitlist = any(
-            r.name in remaining_waitlist for r in member.roles
-        )
-        if not has_other_waitlist:
-            generic_role = get_role_by_name(interaction.guild, roleNames["waitlist"])
-            if generic_role and generic_role in member.roles:
-                await member.remove_roles(generic_role, reason="No remaining waitlist roles")
+            # Remove the generic Waitlist role only if they hold no other gamemode waitlist roles
+            remaining_waitlist = [
+                get_waitlist_role_name(k) for k in listGamemodeKeys if k != gm_key
+            ]
+            has_other_waitlist = any(
+                r.name in remaining_waitlist for r in member.roles
+            )
+            if not has_other_waitlist:
+                generic_role = get_role_by_name(interaction.guild, roleNames["waitlist"])
+                if generic_role and generic_role in member.roles:
+                    await member.remove_roles(generic_role, reason="No remaining waitlist roles")
 
-        # Remove any existing tier roles for this gamemode
-        old_tier_role_names = [get_tier_role_name(gm_key, t) for t in tierOrder]
-        old_tier_roles = [r for r in member.roles if r.name in old_tier_role_names]
-        if old_tier_roles:
-            await member.remove_roles(*old_tier_roles, reason="Old tier roles removed by /results")
+            # Remove any existing tier roles for this gamemode
+            old_tier_role_names = [get_tier_role_name(gm_key, t) for t in tierOrder]
+            old_tier_roles = [r for r in member.roles if r.name in old_tier_role_names]
+            if old_tier_roles:
+                await member.remove_roles(*old_tier_roles, reason="Old tier roles removed by /results")
 
-        # Add new tier role
-        if newtier != "none":
-            new_role_name = get_tier_role_name(gm_key, newtier)
-            new_role = get_role_by_name(interaction.guild, new_role_name)
-            if new_role:
-                await member.add_roles(new_role, reason="New tier role added by /results")
-            else:
-                logging.warning(f"Tier role '{new_role_name}' not found in guild")
+            # Add new tier role
+            if newtier != "none":
+                new_role_name = get_tier_role_name(gm_key, newtier)
+                new_role = get_role_by_name(interaction.guild, new_role_name)
+                if new_role:
+                    await member.add_roles(new_role, reason="New tier role added by /results")
+                else:
+                    logging.warning(f"Tier role '{new_role_name}' not found in guild")
 
         announcements_ch = get_channel_by_name(channelNames["announcements"])
         if announcements_ch:
             await announcements_ch.send(content=f"<@{user.id}>", embed=embed)
+        else:
+            logging.warning(
+                f"[results] Announcements channel '{channelNames['announcements']}' not found — "
+                f"result message NOT sent for {user.id} (tier was still saved to the database)."
+            )
 
         # ── Push this result straight to the website's data.json on GitHub ──
         site_warning = ""
@@ -228,6 +243,9 @@ async def results(
         except Exception:
             logging.exception("Failed to push /results to the website's data.json:")
             site_warning = "\n⚠️ Result posted, but the website update failed — check logs / GITHUB_TOKEN."
+
+        if not announcements_ch:
+            site_warning += "\n⚠️ Announcements channel not found — result message wasn't posted publicly. Check `channelNames['announcements']` in your config."
 
         await interaction.response.send_message(content=messages["result_sent"] + site_warning, ephemeral=True)
     except Exception as e:
