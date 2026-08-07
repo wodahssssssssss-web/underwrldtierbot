@@ -241,6 +241,9 @@ async def openqueue(
     gamemode: str = nextcord.SlashOption(description="Gamemode", required=True, choices=listGamemodesText),
 ):
     try:
+        if not has_staff_role(interaction.user):
+            await interaction.response.send_message(messages["no_permission"], ephemeral=True); return
+
         gm_key = gamemodeDisplayToKey.get(gamemode, gamemode)
         response = queue.addTester(gamemode=gm_key, userID=interaction.user.id)
 
