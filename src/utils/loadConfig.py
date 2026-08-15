@@ -14,6 +14,7 @@ try:
     maxQueue:    int = config["options"]["queue_limit"]
     maxTester:   int = config["options"]["tester_limit"]
     reloadQueue: int = config["options"]["reload_queue"]
+    dbSyncIntervalHours: float = config["options"].get("db_sync_interval_hours", 1)
     # Convert days → seconds for cooldown comparisons
     cooldown:        int = config["options"]["cooldown_days"] * 24 * 60  # stored in minutes internally
     boosterCooldown: int = config["options"].get("booster_cooldown_days", config["options"]["cooldown_days"]) * 24 * 60
