@@ -115,6 +115,17 @@ async def getTierForGamemode(cursor, discordID: int, gamemode: str):
     return await cursor.fetchone()
 
 @withConnection
+async def setTierForGamemodeSync(cursor, discordID: int, gamemode: str, tier: str) -> bool:
+    """Upserts a player's tier for a gamemode WITHOUT touching lastTest on existing rows
+    (used by the website->DB sync, which has no cooldown-timestamp data to give)."""
+    await cursor.execute("""
+    INSERT INTO gamemode_cooldowns (discordID, gamemode, lastTest, tier)
+    VALUES (%s, %s, 0, %s) AS new_data
+    ON DUPLICATE KEY UPDATE tier = new_data.tier
+    """, (discordID, gamemode, tier))
+    return True
+
+@withConnection
 async def resetGamemodeCooldowns(cursor, discordID: int) -> bool:
     await cursor.execute("DELETE FROM gamemode_cooldowns WHERE discordID = %s", (discordID,))
     return True
