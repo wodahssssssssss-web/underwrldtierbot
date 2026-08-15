@@ -13,6 +13,7 @@ from src.utils import mojang, format
 from src.utils.ensureResources import ensure_all
 from src.utils.transcript import post_transcript
 from src.utils import github
+from src.utils import dbSync
 from src.tierlistQueue import TierlistQueue
 from src.ui.waitlistButton import PanelView, VerifyPanelView
 from src.ui.enterQueueButton import EnterQueueButton
@@ -113,6 +114,7 @@ async def on_ready():
         print("Slash commands synced ✅")
         await setupBot()
         updateQueue.start()
+        syncDatabaseFromWebsite.start()
     except Exception as e:
         logging.exception("Failed bot startup sequence:")
         sys.exit("Failed startup sequence")
@@ -133,6 +135,16 @@ async def updateQueue():
         message: nextcord.Message = await channel.fetch_message(messageID)
         messageUpdate = queue.makeQueueMessage(gamemode=gamemode)
         await message.edit(embed=nextcord.Embed.from_dict(messageUpdate))
+
+
+@tasks.loop(hours=dbSyncIntervalHours)
+async def syncDatabaseFromWebsite():
+    """Pulls the website's data.json and updates local DB tiers to match. See src/utils/dbSync.py."""
+    try:
+        result = await dbSync.sync_from_website()
+        logging.info(f"[dbSync] Scheduled sync: {result}")
+    except Exception:
+        logging.exception("[dbSync] Scheduled website->DB sync failed:")
 
 
 # ── Slash commands ─────────────────────────────────────────────────────────────
