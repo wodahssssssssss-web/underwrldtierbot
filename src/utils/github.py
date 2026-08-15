@@ -47,6 +47,14 @@ def site_mode_key(gm_key: str) -> str:
     return GM_KEY_TO_SITE.get(gm_key, gm_key)
 
 
+SITE_KEY_TO_GM = {v: k for k, v in GM_KEY_TO_SITE.items()}
+
+
+def bot_mode_key(site_key: str) -> str:
+    """Map a website mode key (index.html) back to the ticket-bot's gamemode key."""
+    return SITE_KEY_TO_GM.get(site_key, site_key)
+
+
 def fetch_data():
     """Fetch data.json from GitHub. Returns (data_dict, sha_string)."""
     r = requests.get(GITHUB_API, headers=GH_HEADERS)
