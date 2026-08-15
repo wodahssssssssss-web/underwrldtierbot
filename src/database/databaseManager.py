@@ -36,6 +36,9 @@ async def getLastTestForGamemode(discordID: int, gamemode: str):
 async def getTierForGamemode(discordID: int, gamemode: str):
     return await db.getTierForGamemode(discordID, gamemode)
 
+async def setTierForGamemodeSync(discordID: int, gamemode: str, tier: str):
+    return await db.setTierForGamemodeSync(discordID, gamemode, tier)
+
 async def resetGamemodeCooldowns(discordID: int) -> bool:
     return await db.resetGamemodeCooldowns(discordID)
 
