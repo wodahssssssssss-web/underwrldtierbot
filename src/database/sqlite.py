@@ -106,6 +106,17 @@ async def getTierForGamemode(cursor: sqlite3.Cursor, discordID: int, gamemode: s
     return cursor.fetchone()
 
 @withConnection
+async def setTierForGamemodeSync(cursor: sqlite3.Cursor, discordID: int, gamemode: str, tier: str) -> bool:
+    """Upserts a player's tier for a gamemode WITHOUT touching lastTest on existing rows
+    (used by the website->DB sync, which has no cooldown-timestamp data to give)."""
+    cursor.execute("""
+    INSERT INTO gamemode_cooldowns (discordID, gamemode, lastTest, tier)
+    VALUES (?, ?, 0, ?)
+    ON CONFLICT(discordID, gamemode) DO UPDATE SET tier = excluded.tier
+    """, (discordID, gamemode, tier))
+    return True
+
+@withConnection
 async def resetGamemodeCooldowns(cursor: sqlite3.Cursor, discordID: int) -> bool:
     cursor.execute("DELETE FROM gamemode_cooldowns WHERE discordID = ?", (discordID,))
     return True
