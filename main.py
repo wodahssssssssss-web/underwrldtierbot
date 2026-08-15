@@ -751,6 +751,24 @@ async def passeval(
 
 # ── /tier — website data.json admin commands (merged from the old bot) ─────────
 
+@bot.slash_command(name="syncdb", description="Pull the website's tiers into the local database now")
+async def syncdb(interaction: nextcord.Interaction):
+    try:
+        if not has_staff_role(interaction.user):
+            await interaction.response.send_message(messages["no_permission"], ephemeral=True); return
+
+        await interaction.response.defer(ephemeral=True)
+        result = await dbSync.sync_from_website()
+        await interaction.followup.send(
+            f"✅ Sync complete.\n**{result['updated']}** tiers updated, "
+            f"**{result['skipped_unknown']}** placements skipped (unrecognized username).",
+            ephemeral=True
+        )
+    except Exception as e:
+        logging.exception("Error in /syncdb:")
+        await interaction.followup.send(content=messages["error"], ephemeral=True)
+
+
 @bot.slash_command(name="tier", description="Manage the website's tier list data")
 async def tier(interaction: nextcord.Interaction):
     pass  # parent command — never invoked directly, only its subcommands are
