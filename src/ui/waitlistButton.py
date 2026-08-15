@@ -7,7 +7,7 @@ from src.utils.mojang import getuserid
 from src.utils.loadConfig import (
     messages, listGamemodes,
     listHighTiers, highTicketCategoryName, roleNames, get_waitlist_role_name,
-    get_cooldown_for_member
+    get_cooldown_for_member, get_tier_role_name
 )
 from src.utils import format
 
@@ -262,12 +262,19 @@ class HighTierGamemodeSelect(ui.Select):
             gm_key = self.values[0]
             display = listGamemodes[gm_key]["display"]
 
-            row = await databaseManager.getTierForGamemode(member.id, gm_key)
-            gm_tier = row[0] if row else "none"
+            # Check Discord roles directly (not the DB record) — matches whatever
+            # tier role the player currently holds for this gamemode.
+            role_names_by_tier = {t: get_tier_role_name(gm_key, t) for t in listHighTiers}
+            held_role_names = {r.name for r in member.roles}
 
-            if gm_tier not in listHighTiers:
+            gm_tier = next(
+                (t for t in listHighTiers if role_names_by_tier[t] in held_role_names),
+                None
+            )
+
+            if gm_tier is None:
                 await interaction.response.edit_message(
-                    content=f"❌ You're not allowed to — you need **HT3 or better** in **{display}** (your tier: **{gm_tier}**).",
+                    content=f"❌ You're not allowed to — you need an **HT3 or better** role in **{display}**.",
                     view=None
                 )
                 return
